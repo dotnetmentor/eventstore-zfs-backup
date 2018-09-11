@@ -50,6 +50,7 @@ EVENTSTORE_ZFS_BACKUP_REGION=${EVENTSTORE_ZFS_BACKUP_REGION:?}
   fi
 
   echo "Performing cleanup"
+  cd ~ || exit
   rm -rf ~/tmp-eventstore-zfs-backup
 
   echo "Successfully installed \"eventstore-zfs-backup\" to ${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}"
