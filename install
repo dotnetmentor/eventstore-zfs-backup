@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+
+set -e
+
+declare -x EVENTSTORE_ZFS_BACKUP_INSTALLDIR="${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:-/usr/local/sbin}"
+declare -x EVENTSTORE_ZFS_BACKUP_INSTALL_CRON="${EVENTSTORE_ZFS_BACKUP_INSTALL_CRON:-false}"
+
+install () {
+  echo "Starting installation of \"eventstore-zfs-backup\""
+
+  mkdir -p ~/tmp-eventstore-zfs-backup
+  mkdir -p "${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}"
+
+  cd ~/tmp-eventstore-zfs-backup || exit 1
+
+  echo "Installing dependencies"
+  apt-get update && apt-get install awscli unzip -y
+
+  echo "Installing \"eventstore-zfs-backup\" utility"
+  curl -LJO https://github.com/dotnetmentor/eventstore-zfs-backup/archive/master.zip
+  unzip -o eventstore-zfs-backup-master.zip
+
+  cp ./eventstore-zfs-backup-master/src/eventstore-zfs-backup "${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/eventstore-zfs-backup"
+  chmod +x "${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/eventstore-zfs-backup"
+
+  echo "Installing \"zfs-auto-snapshot\""
+  curl -LJO https://github.com/zfsonlinux/zfs-auto-snapshot/archive/master.zip
+  unzip -o zfs-auto-snapshot-master.zip
+
+  mkdir -p /usr/local/share/man/man8
+  cp ./zfs-auto-snapshot-master/src/zfs-auto-snapshot.8 /usr/local/share/man/man8/zfs-auto-snapshot.8
+  chmod 0644 /usr/local/share/man/man8/zfs-auto-snapshot.8
+
+  cp ./zfs-auto-snapshot-master/src/zfs-auto-snapshot.sh "${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/zfs-auto-snapshot"
+  chmod +x "${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/zfs-auto-snapshot"
+
+  if [[ "${EVENTSTORE_ZFS_BACKUP_INSTALL_CRON}" == "true" ]]; then
+    echo 'Adding backup cron'
+    echo "
+    export EVENTSTORE_ZFS_BACKUP_BUCKET=${EVENTSTORE_ZFS_BACKUP_BUCKET:?}
+    export EVENTSTORE_ZFS_BACKUP_REGION=${EVENTSTORE_ZFS_BACKUP_REGION:?}
+
+    */15 * * * * root ${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/zfs-auto-snapshot --label=frequent --keep=16 --quiet --syslog --post-snapshot=${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/eventstore-zfs-backup --prefix=eventstore-zfs-snap //
+    00 * * * * root ${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/zfs-auto-snapshot --label=hourly --keep=24 --quiet --syslog --post-snapshot=${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/eventstore-zfs-backup --prefix=eventstore-zfs-snap //
+    59 23 * * * root ${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/zfs-auto-snapshot --label=daily --keep=14 --quiet --syslog --post-snapshot=${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/eventstore-zfs-backup --prefix=eventstore-zfs-snap //
+    59 23 * * 0 root ${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/zfs-auto-snapshot --label=weekly --keep=4 --quiet --syslog --post-snapshot=${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/eventstore-zfs-backup --prefix=eventstore-zfs-snap //
+    00 00 1 * * root ${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/zfs-auto-snapshot --label=monthly --keep=4 --quiet --syslog --post-snapshot=${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/eventstore-zfs-backup --prefix=eventstore-zfs-snap //
+    " > /etc/cron.d/eventstore-zfs-backup
+  fi
+
+  echo "Performing cleanup"
+  rm -rf ~/tmp-eventstore-zfs-backup
+
+  echo "Successfully installed \"eventstore-zfs-backup\" to ${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}"
+}
+
+install "$@"

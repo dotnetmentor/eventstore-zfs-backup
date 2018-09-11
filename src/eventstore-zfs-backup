@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+export EVENTSTORE_ZFS_BACKUP_BUCKET="${EVENTSTORE_ZFS_BACKUP_BUCKET:?'EVENTSTORE_ZFS_BACKUP_BUCKET must be set'}"
+export EVENTSTORE_ZFS_BACKUP_REGION="${EVENTSTORE_ZFS_BACKUP_REGION:?'EVENTSTORE_ZFS_BACKUP_REGION must be set'}"
+
+main () {
+  echo 'Running eventstore-zfs-backup'
+  pool="${1:?'A pool name must be provided'}"
+  snapshot="${2:?'A snapshot name must be provided'}"
+  hostname="$(cat /etc/hostname)"
+  backup="host-${hostname:?}-${pool:?}-${snapshot}.gz"
+
+  echo "Creating backup of snapshot (${snapshot:?})"
+  zfs send "${pool:?}@${snapshot:?}" | gzip > "${backup:?}"
+  echo "Backup created (${backup:?})"
+
+  echo "Uploading backup to S3 (${EVENTSTORE_ZFS_BACKUP_BUCKET:?})"
+  aws s3 cp --region="${EVENTSTORE_ZFS_BACKUP_REGION:?}" "${backup:?}" "${EVENTSTORE_ZFS_BACKUP_BUCKET:?}"
+
+  echo "Removing backup file (${backup:?})"
+  rm "${backup:?}"
+}
+
+main "$@"
