@@ -38,7 +38,8 @@ install () {
     local crontab="/etc/cron.d/eventstore-zfs-backup"
     echo "Adding backup crontab (${crontab:?})"
 
-    echo "EVENTSTORE_ZFS_BACKUP_BUCKET=${EVENTSTORE_ZFS_BACKUP_BUCKET:?}
+    echo "PATH='/usr/bin:/bin:/usr/sbin:/sbin'
+EVENTSTORE_ZFS_BACKUP_BUCKET=${EVENTSTORE_ZFS_BACKUP_BUCKET:?}
 EVENTSTORE_ZFS_BACKUP_REGION=${EVENTSTORE_ZFS_BACKUP_REGION:?}
 
 */15 * * * * root ${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/zfs-auto-snapshot --label=frequent --keep=16 --quiet --syslog --post-snapshot=${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/eventstore-zfs-backup --prefix=eventstore-zfs-snap //
