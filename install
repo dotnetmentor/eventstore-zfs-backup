@@ -35,17 +35,18 @@ install () {
   chmod +x "${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/zfs-auto-snapshot"
 
   if [[ "${EVENTSTORE_ZFS_BACKUP_INSTALL_CRON}" == "true" ]]; then
-    echo 'Adding backup cron'
-    echo "
-    export EVENTSTORE_ZFS_BACKUP_BUCKET=${EVENTSTORE_ZFS_BACKUP_BUCKET:?}
-    export EVENTSTORE_ZFS_BACKUP_REGION=${EVENTSTORE_ZFS_BACKUP_REGION:?}
+    local crontab="/etc/cron.d/eventstore-zfs-backup"
+    echo "Adding backup crontab (${crontab:?})"
 
-    */15 * * * * root ${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/zfs-auto-snapshot --label=frequent --keep=16 --quiet --syslog --post-snapshot=${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/eventstore-zfs-backup --prefix=eventstore-zfs-snap //
-    00 * * * * root ${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/zfs-auto-snapshot --label=hourly --keep=24 --quiet --syslog --post-snapshot=${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/eventstore-zfs-backup --prefix=eventstore-zfs-snap //
-    59 23 * * * root ${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/zfs-auto-snapshot --label=daily --keep=14 --quiet --syslog --post-snapshot=${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/eventstore-zfs-backup --prefix=eventstore-zfs-snap //
-    59 23 * * 0 root ${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/zfs-auto-snapshot --label=weekly --keep=4 --quiet --syslog --post-snapshot=${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/eventstore-zfs-backup --prefix=eventstore-zfs-snap //
-    00 00 1 * * root ${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/zfs-auto-snapshot --label=monthly --keep=4 --quiet --syslog --post-snapshot=${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/eventstore-zfs-backup --prefix=eventstore-zfs-snap //
-    " > /etc/cron.d/eventstore-zfs-backup
+    echo "EVENTSTORE_ZFS_BACKUP_BUCKET=${EVENTSTORE_ZFS_BACKUP_BUCKET:?}
+EVENTSTORE_ZFS_BACKUP_REGION=${EVENTSTORE_ZFS_BACKUP_REGION:?}
+
+*/15 * * * * root ${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/zfs-auto-snapshot --label=frequent --keep=16 --quiet --syslog --post-snapshot=${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/eventstore-zfs-backup --prefix=eventstore-zfs-snap //
+00 * * * * root ${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/zfs-auto-snapshot --label=hourly --keep=24 --quiet --syslog --post-snapshot=${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/eventstore-zfs-backup --prefix=eventstore-zfs-snap //
+59 23 * * * root ${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/zfs-auto-snapshot --label=daily --keep=14 --quiet --syslog --post-snapshot=${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/eventstore-zfs-backup --prefix=eventstore-zfs-snap //
+59 23 * * 0 root ${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/zfs-auto-snapshot --label=weekly --keep=4 --quiet --syslog --post-snapshot=${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/eventstore-zfs-backup --prefix=eventstore-zfs-snap //
+00 00 1 * * root ${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/zfs-auto-snapshot --label=monthly --keep=4 --quiet --syslog --post-snapshot=${EVENTSTORE_ZFS_BACKUP_INSTALLDIR:?}/eventstore-zfs-backup --prefix=eventstore-zfs-snap //
+" > ${crontab:?}
   fi
 
   echo "Performing cleanup"
